@@ -21,7 +21,8 @@ import java.awt.event.InputEvent;
 import javax.swing.JMenu;
 
 public class MainFrame extends JFrame {
-
+	
+	private static final long serialVersionUID = 110418166857720605L;
 	private JPanel contentPane;
 	private JMenuBar menuBar;
 	private JMenuItem importMenuItem;
@@ -69,7 +70,9 @@ public class MainFrame extends JFrame {
 			FileIndexer x = new FileIndexer();
 			x.addFileToIndex(new File("C:\\Users\\Botezatu\\Desktop\\mihai.txt"));
 			x.addFileToIndex(new File("C:\\Users\\Botezatu\\Desktop\\mihai2.txt"));
+			x.updateReader();
 			x.search();
+			x.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
