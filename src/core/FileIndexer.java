@@ -70,7 +70,7 @@ public class FileIndexer implements AutoCloseable {
 	    }
 	}
 	
-	public void addFileToIndex(File file) throws CorruptIndexException, IOException {
+	public Document addFileToIndex(File file) throws CorruptIndexException, IOException {
 		String fileAbsolutePath = file.getAbsolutePath();
 		try {
 			Query query = new QueryParser("fullpath", _analyzer).parse(fileAbsolutePath);
@@ -86,14 +86,18 @@ public class FileIndexer implements AutoCloseable {
 		doc.add(new StringField("fullpath", fileAbsolutePath,  Field.Store.YES));
 		
 		_indexWriter.addDocument(doc);
-		_indexWriter.commit();
 		_indexedDocuments.add(doc);
+		
+		return doc;
 	}
 	
 	public void updateReader() throws IOException {
 		if (_indexReader != null) {
 			_indexReader.close();
 		}
+		// Commit the changed in the indexWriter, 
+		// and then recreate a DirectoryReader.
+		_indexWriter.commit();
 		_indexReader = DirectoryReader.open(_indexDirectory);
 	}
 	
@@ -101,8 +105,7 @@ public class FileIndexer implements AutoCloseable {
 		return _indexedDocuments.toArray(new Document[_indexedDocuments.size()]);
 	}
 	
-	public void search() throws ParseException, IOException {
-		String queryString = "zece";
+	public void search(String queryString) throws ParseException, IOException {
 		Query query = new QueryParser("content", _analyzer).parse(queryString);
 		int hitsPerPage = 10;
 	    IndexSearcher searcher = new IndexSearcher(_indexReader);
