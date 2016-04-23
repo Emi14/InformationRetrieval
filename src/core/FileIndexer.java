@@ -73,7 +73,7 @@ public class FileIndexer implements AutoCloseable {
 	public void addFileToIndex(File file) throws CorruptIndexException, IOException {
 		String fileAbsolutePath = file.getAbsolutePath();
 		try {
-			Query query = new QueryParser("fullpath", _indexWriter.getAnalyzer()).parse(fileAbsolutePath);
+			Query query = new QueryParser("fullpath", _analyzer).parse(fileAbsolutePath);
 			_indexWriter.deleteDocuments(query);
 		}
 		catch (ParseException err) {
@@ -98,11 +98,11 @@ public class FileIndexer implements AutoCloseable {
 	}
 	
 	public Document[] getIndexedDocuments() {
-		return (Document[])_indexedDocuments.toArray();
+		return _indexedDocuments.toArray(new Document[_indexedDocuments.size()]);
 	}
 	
 	public void search() throws ParseException, IOException {
-		String queryString = "elevi";
+		String queryString = "zece";
 		Query query = new QueryParser("content", _analyzer).parse(queryString);
 		int hitsPerPage = 10;
 	    IndexSearcher searcher = new IndexSearcher(_indexReader);
