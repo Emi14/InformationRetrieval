@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.ro.RomanianAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -33,6 +34,7 @@ public class FileIndexer implements AutoCloseable {
 	private Directory _indexDirectory = null;
 	private IndexWriter _indexWriter = null;
 	private IndexReader _indexReader = null;
+	private boolean _needsCommit = false;
 	private static Collection<Document> _indexedDocuments;
 	 
 	private static final String IndexerPath = "E:\\Cucu";
@@ -50,7 +52,7 @@ public class FileIndexer implements AutoCloseable {
 		
 		// Use for now a RAM Directory
 		_indexDirectory = new RAMDirectory();
-		_analyzer = new StandardAnalyzer();
+		_analyzer = new RomanianAnalyzer();
 		IndexWriterConfig writerConfig = new IndexWriterConfig(_analyzer);
 		_indexWriter = new IndexWriter(_indexDirectory, writerConfig);
 		_indexWriter.commit();
@@ -58,6 +60,7 @@ public class FileIndexer implements AutoCloseable {
 	}
 	
 	private void readIndexedDocuments() throws IOException {
+		this.updateReader();
 		_indexedDocuments = new ArrayList<Document>();
 		Query query = new MatchAllDocsQuery();
 		IndexSearcher searcher = new IndexSearcher(_indexReader);
@@ -87,16 +90,18 @@ public class FileIndexer implements AutoCloseable {
 		
 		_indexWriter.addDocument(doc);
 		_indexedDocuments.add(doc);
+		_needsCommit = true;
 		
 		return doc;
 	}
 	
 	public void updateReader() throws IOException {
-		if (_indexReader != null) {
-			_indexReader.close();
-		}
 		// Commit the changed in the indexWriter, 
 		// and then recreate a DirectoryReader.
+		if (!_needsCommit) {
+			return;
+		}
+		_indexReader.close();
 		_indexWriter.commit();
 		_indexReader = DirectoryReader.open(_indexDirectory);
 	}
@@ -106,7 +111,13 @@ public class FileIndexer implements AutoCloseable {
 	}
 	
 	public void search(String queryString) throws ParseException, IOException {
-		Query query = new QueryParser("content", _analyzer).parse(queryString);
+		search(queryString, "content");
+	}
+	
+	public void search(String queryString, String where) throws ParseException, IOException {
+		this.updateReader();
+		
+		Query query = new QueryParser(where, _analyzer).parse(queryString);
 		int hitsPerPage = 10;
 	    IndexSearcher searcher = new IndexSearcher(_indexReader);
 	    TopScoreDocCollector collector = TopScoreDocCollector.create(hitsPerPage);

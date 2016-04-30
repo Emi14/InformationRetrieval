@@ -1,7 +1,10 @@
 package views;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -10,11 +13,9 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 
-import javax.swing.DefaultListModel;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -22,17 +23,19 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
+import javax.swing.JTree;
 import javax.swing.KeyStroke;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.classic.ParseException;
 
 import core.FileIndexer;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
 
 public class MainFrame extends JFrame {
 	
@@ -50,12 +53,17 @@ public class MainFrame extends JFrame {
 	private JLabel searchLabel;
 	private JPanel searchPanel;
 	private JScrollPane indexedScrollPane;
-	private JList<String> indexedList;
-	private DefaultListModel<String> indexedListModel;
 	private JPanel indexedPanel;
 	private JLabel indexedDocumentsLabel;
 	
 	private JFileChooser importFileChooser;
+	private JTree indexedTree;
+	private JLabel resultsLabel;
+	private JPanel panel;
+	private JScrollPane resultDocumentPane;
+	private JScrollPane resultsDocumentsPane;
+	private JTree resultsTree;
+	private JTextPane resultsTextPane;
 	
 	private class ImportAction implements ActionListener {
 		private MainFrame _frame;
@@ -106,7 +114,6 @@ public class MainFrame extends JFrame {
 			}
  			try {
  				String text = this._frame.searchTextField.getText();
-				this._frame.indexer.updateReader();
 				this._frame.indexer.search(text);
 			} catch (IOException e1) {
 				System.out.println("Unable to update the indexer's reader: " + e1.getMessage());
@@ -138,7 +145,7 @@ public class MainFrame extends JFrame {
 			try {
 				for (File selectedFile: selectedFiles) {
 					Document doc = this.indexer.addFileToIndex(selectedFile);
-					this.addDocToIndexedList(doc);
+					this.addDocToTree(doc, this.indexedTree);
 				}
 			} catch (IOException ex) {
 				System.out.println("Unable to index the files: " + ex.getMessage());
@@ -146,8 +153,13 @@ public class MainFrame extends JFrame {
 		}
 	}
 	
-	private void addDocToIndexedList(Document doc) {
-		indexedListModel.addElement(doc.get("filename") + " (" + doc.get("fullpath") + ")");
+	private void addDocToTree(Document doc, JTree tree) {
+		DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+		DefaultMutableTreeNode root = (DefaultMutableTreeNode)model.getRoot();
+		String title = doc.get("filename") + " (" + doc.get("fullpath") + ")";
+		DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(title);
+		root.add(newNode);
+		model.reload(root);
 	}
 
 	/**
@@ -159,7 +171,7 @@ public class MainFrame extends JFrame {
 		
 		setTitle("InformationRetrieval");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 819, 507);
+		setBounds(100, 100, 640, 480);
 		
 		this.addWindowListener(new MainFrameWindowAdapter(this));
 		
@@ -188,11 +200,39 @@ public class MainFrame extends JFrame {
 		setContentPane(contentPane);
 		
 		splitPane = new JSplitPane();
-		splitPane.setResizeWeight(0.1);
+		splitPane.setResizeWeight(0.2);
 		contentPane.add(splitPane, BorderLayout.CENTER);
 		
 		rightMainPanel = new JPanel();
+		rightMainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 		splitPane.setRightComponent(rightMainPanel);
+		rightMainPanel.setLayout(new BorderLayout(0, 0));
+		
+		resultsLabel = new JLabel("Results");
+		resultsLabel.setBorder(new EmptyBorder(0, 0, 5, 0));
+		rightMainPanel.add(resultsLabel, BorderLayout.NORTH);
+		
+		panel = new JPanel();
+		rightMainPanel.add(panel, BorderLayout.CENTER);
+		panel.setLayout(new BorderLayout(0, 0));
+		
+		resultDocumentPane = new JScrollPane();
+		resultDocumentPane.setPreferredSize(new Dimension(150, 3));
+		panel.add(resultDocumentPane, BorderLayout.WEST);
+		
+		resultsTree = new JTree();
+		resultsTree.setModel(new DefaultTreeModel(new DefaultMutableTreeNode("Results")));
+		resultsTree.setBorder(new EmptyBorder(5, 5, 5, 5));
+		resultsTree.setRootVisible(false);
+		resultDocumentPane.setViewportView(resultsTree);
+		
+		resultsDocumentsPane = new JScrollPane();
+		panel.add(resultsDocumentsPane, BorderLayout.CENTER);
+		
+		resultsTextPane = new JTextPane();
+		resultsTextPane.setContentType("HTML/plain");
+		resultsTextPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		resultsDocumentsPane.setViewportView(resultsTextPane);
 		
 		leftMainPanel = new JPanel();
 		splitPane.setLeftComponent(leftMainPanel);
@@ -209,6 +249,7 @@ public class MainFrame extends JFrame {
 		searchTextField.setColumns(10);
 		
 		searchLabel = new JLabel("Search in documents");
+		searchLabel.setBorder(new EmptyBorder(0, 0, 5, 0));
 		searchPanel.add(searchLabel, BorderLayout.NORTH);
 		
 		indexedPanel = new JPanel();
@@ -220,16 +261,19 @@ public class MainFrame extends JFrame {
 		indexedScrollPane.setViewportBorder(null);
 		indexedPanel.add(indexedScrollPane, BorderLayout.CENTER);
 		
-		indexedListModel = new DefaultListModel<String>();
-		indexedList = new JList<String>(indexedListModel);
+		indexedTree = new JTree(new DefaultMutableTreeNode("Imported files"));
+		indexedTree.setBorder(new EmptyBorder(5, 5, 5, 5));
+		indexedTree.setRootVisible(false);
+		
+		indexedScrollPane.setViewportView(indexedTree);
+		
 		Document[] indexedDocuments = indexer.getIndexedDocuments();
 		for (Document doc: indexedDocuments) {
-			this.addDocToIndexedList(doc);
+			this.addDocToTree(doc, this.indexedTree);
 		}
-		indexedScrollPane.setViewportView(indexedList);
 
 		indexedDocumentsLabel = new JLabel("Indexed documents");
-		indexedDocumentsLabel.setLabelFor(indexedList);
+		indexedDocumentsLabel.setBorder(new EmptyBorder(0, 0, 5, 5));
 		indexedPanel.add(indexedDocumentsLabel, BorderLayout.NORTH);
 	}
 }
