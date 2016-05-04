@@ -8,7 +8,6 @@ import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.ro.RomanianAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -110,29 +109,19 @@ public class FileIndexer implements AutoCloseable {
 		return _indexedDocuments.toArray(new Document[_indexedDocuments.size()]);
 	}
 	
-	public void search(String queryString) throws ParseException, IOException {
-		search(queryString, "content");
+	public Analyzer getAnalyzer() {
+		return _analyzer;
 	}
 	
-	public void search(String queryString, String where) throws ParseException, IOException {
-		this.updateReader();
-		
-		Query query = new QueryParser(where, _analyzer).parse(queryString);
-		int hitsPerPage = 10;
-	    IndexSearcher searcher = new IndexSearcher(_indexReader);
-	    TopScoreDocCollector collector = TopScoreDocCollector.create(hitsPerPage);
-	    searcher.search(query, collector);
-	    ScoreDoc[] hits = collector.topDocs().scoreDocs;
-	    for (int i = 0; i < hits.length; i++) {
-	    	int documentId = hits[i].doc;
-	    	Document document = searcher.doc(documentId);
-	    	System.out.println("Found in: " + document.get("fullpath"));
-	    }
+	public IndexReader getIndexReader() {
+		return _indexReader;
 	}
 	
 	@Override
 	public void close() throws IOException {
 		_indexWriter.close();
 		_indexReader.close();
+		_indexDirectory.close();
+		_analyzer.close();
     }
 }

@@ -31,15 +31,18 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.MutableTreeNode;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.classic.ParseException;
 
+import core.DocumentSearcher;
 import core.FileIndexer;
 
 public class MainFrame extends JFrame {
 	
 	private FileIndexer indexer;
+	private DocumentSearcher searcher;
 	
 	private static final long serialVersionUID = 110418166857720605L;
 	private JPanel contentPane;
@@ -113,8 +116,12 @@ public class MainFrame extends JFrame {
 				return;
 			}
  			try {
+ 				this._frame.clearTree(resultsTree);
  				String text = this._frame.searchTextField.getText();
-				this._frame.indexer.search(text);
+				Document[] docs = this._frame.searcher.search(text);
+				for (int i = 0; i < docs.length; i++) {
+					this._frame.addDocToTree(docs[i], this._frame.resultsTree);
+			    }
 			} catch (IOException e1) {
 				System.out.println("Unable to update the indexer's reader: " + e1.getMessage());
 			} catch (ParseException e2) {
@@ -153,6 +160,15 @@ public class MainFrame extends JFrame {
 		}
 	}
 	
+	private void clearTree(JTree tree) {
+		DefaultTreeModel model = (DefaultTreeModel)this.resultsTree.getModel();
+		DefaultMutableTreeNode root = (DefaultMutableTreeNode)model.getRoot();
+		while(!model.isLeaf(root))
+    	{
+    		model.removeNodeFromParent((MutableTreeNode)model.getChild(root,0));
+    	}
+	}
+	
 	private void addDocToTree(Document doc, JTree tree) {
 		DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
 		DefaultMutableTreeNode root = (DefaultMutableTreeNode)model.getRoot();
@@ -176,6 +192,7 @@ public class MainFrame extends JFrame {
 		this.addWindowListener(new MainFrameWindowAdapter(this));
 		
 		indexer = new FileIndexer();
+		searcher = new DocumentSearcher(indexer);
 		
 		importFileChooser = new JFileChooser();
 		FileFilter filter = new FileNameExtensionFilter("Text File","txt");
