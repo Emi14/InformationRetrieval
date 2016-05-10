@@ -21,6 +21,11 @@ import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.tartarus.snowball.ext.RomanianStemmer;
 
 public class RomanianAnalyzerWithoutDiacritics extends StopwordAnalyzerBase {
+	
+	public RomanianAnalyzerWithoutDiacritics() {
+		super(RomanianAnalyzer.getDefaultStopSet());
+	}
+	
 	public RomanianAnalyzerWithoutDiacritics(CharArraySet set){
 		super(set);
     }
@@ -34,21 +39,16 @@ public class RomanianAnalyzerWithoutDiacritics extends StopwordAnalyzerBase {
         tokenStream = new StandardFilter(tokenStream);
         tokenStream = new LowerCaseFilter(tokenStream);
         tokenStream = new StopFilter(tokenStream, getStopwordSet());
-
-        String stopwords = getStopwordSet().toString();
-        tokenStream = new StopFilter(tokenStream,
-                                     getRomanianStopWordsWithoutDiacritics(stopwords));
-
-
-        tokenStream = new SnowballFilter(tokenStream, new RomanianStemmer()); // stemmer - flexionar forms
-        tokenStream = new ASCIIFoldingFilter(tokenStream); // replacing diacritics
+        tokenStream = new StopFilter(tokenStream, getStopWordsWithoutDiacritics());
+        tokenStream = new SnowballFilter(tokenStream, new RomanianStemmer()); // stemmer - flexionar forms (!)
+        tokenStream = new ASCIIFoldingFilter(tokenStream); // replacing diacritics (!)
 
         return new TokenStreamComponents(source, tokenStream);
-    }
+    } 
 
-    public static CharArraySet getRomanianStopWordsWithoutDiacritics(String str)
+    public CharArraySet getStopWordsWithoutDiacritics()
     {
-        String stopWordsWithoutDiacritics = RomanianAnalyzer.getDefaultStopSet().toString();
+        String stopWordsWithoutDiacritics = getStopwordSet().toString();
         try
         {
             stopWordsWithoutDiacritics = replaceDiacritics(stopWordsWithoutDiacritics);
@@ -57,16 +57,15 @@ public class RomanianAnalyzerWithoutDiacritics extends StopwordAnalyzerBase {
         {
             System.out.println("handled error");
         }
-        //System.out.print(stopWordsWithoutDiacritics + " ");
+        
         Set<String> setStopWordsWithoutDiacritics = Arrays.stream(stopWordsWithoutDiacritics.split(" ")).collect(Collectors.toSet());
-        CharArraySet stopWords = new CharArraySet(setStopWordsWithoutDiacritics, false);
-
-        return stopWords;
+        CharArraySet stopWordsSet = new CharArraySet(setStopWordsWithoutDiacritics, false);
+        
+        return CharArraySet.unmodifiableSet(stopWordsSet);
     }
 
     public static String replaceDiacritics(String textFile) throws IOException
     {
-
         TokenStream tokenStream = new StandardTokenizer();
 
         ((Tokenizer) tokenStream).setReader(new StringReader(textFile.trim()));
@@ -84,8 +83,9 @@ public class RomanianAnalyzerWithoutDiacritics extends StopwordAnalyzerBase {
             ((ASCIIFoldingFilter) tokenStream).foldToASCII(term,term.length);
             sb.append(term);
             sb.append(" ");
-
-        } /* while */
+        }
+        
+        tokenStream.close();
 
         return sb.toString();
     }
