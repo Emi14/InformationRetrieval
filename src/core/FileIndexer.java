@@ -25,6 +25,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 
 import core.RomanianStopWords;
@@ -53,7 +54,8 @@ public class FileIndexer implements AutoCloseable {
 		
 		// Use for now a RAM Directory
 		_indexDirectory = new RAMDirectory();
-		_analyzer = new RomanianAnalyzer(RomanianStopWords.getStopList());
+		//_indexDirectory = FSDirectory.open(file.toPath());//new RAMDirectory();
+		_analyzer = new RomanianAnalyzerWithoutDiacritics(RomanianStopWords.getStopList());
 		IndexWriterConfig writerConfig = new IndexWriterConfig(_analyzer);
 		_indexWriter = new IndexWriter(_indexDirectory, writerConfig);
 		_indexWriter.commit();

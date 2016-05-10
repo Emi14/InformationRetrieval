@@ -234,7 +234,7 @@ public class MainFrame extends JFrame {
 		panel.setLayout(new BorderLayout(0, 0));
 		
 		resultDocumentPane = new JScrollPane();
-		resultDocumentPane.setPreferredSize(new Dimension(150, 3));
+		resultDocumentPane.setPreferredSize(new Dimension(220, 3));
 		panel.add(resultDocumentPane, BorderLayout.WEST);
 		
 		resultsTree = new JTree();
