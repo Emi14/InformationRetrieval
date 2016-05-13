@@ -12,6 +12,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.util.Enumeration;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -26,9 +27,11 @@ import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.JTree;
 import javax.swing.KeyStroke;
+import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.plaf.FontUIResource;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.MutableTreeNode;
@@ -38,6 +41,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 
 import core.DocumentSearcher;
 import core.FileIndexer;
+import java.awt.Font;
 
 public class MainFrame extends JFrame {
 	
@@ -177,6 +181,17 @@ public class MainFrame extends JFrame {
 		root.add(newNode);
 		model.reload(root);
 	}
+	
+	private static void setUIFont (FontUIResource f) {
+		Enumeration<Object> keys = UIManager.getDefaults().keys();
+		while (keys.hasMoreElements()) {
+			Object key = keys.nextElement();
+			Object value = UIManager.get (key);
+			if (value != null && value instanceof FontUIResource) {
+				UIManager.put (key, f);
+			}
+		}
+    } 
 
 	/**
 	 * Create the frame.
@@ -184,6 +199,7 @@ public class MainFrame extends JFrame {
 	 * @throws ParseException 
 	 */
 	public MainFrame() throws IOException, ParseException {
+		setUIFont(new FontUIResource("Dialog", Font.PLAIN, 14));
 		
 		setTitle("InformationRetrieval");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
