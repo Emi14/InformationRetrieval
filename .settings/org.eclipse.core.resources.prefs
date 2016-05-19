@@ -1,2 +1,4 @@
 eclipse.preferences.version=1
-encoding//src/core/stopwords_ro.txt=UTF-8
+encoding//src/core/RomanianAnalyzerWithoutDiacritics.java=UTF-8
+encoding//src/core/stopwords_ro1.txt=UTF-8
+encoding//src/core/stopwords_ro2.txt=UTF-8
