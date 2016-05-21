@@ -33,7 +33,7 @@ public class RomanianAnalyzerWithoutDiacritics extends StopwordAnalyzerBase {
         TokenStream tokenStream = source;
         tokenStream = new StandardFilter(tokenStream);
         tokenStream = new LowerCaseFilter(tokenStream);
-        tokenStream = new StopFilter(tokenStream, getFullStopWordsSet());
+        tokenStream = new StopFilter(tokenStream, getFullStopWordsSet()); // stopwords - with and without diacritics (!)
         tokenStream = new SnowballFilter(tokenStream, new RomanianStemmer()); // stemmer - flexionar forms (!)
         tokenStream = new ASCIIFoldingFilter(tokenStream); // replacing diacritics (!)
 
@@ -51,8 +51,6 @@ public class RomanianAnalyzerWithoutDiacritics extends StopwordAnalyzerBase {
     		 ASCIIFoldingFilter.foldToASCII(stopWord, 0, output, 0, stopWord.length);
     		 stopWords.add(String.valueOf(output));
     	}
-    	
-    	System.out.println(stopWords.toString());
     	
     	return stopWords;
     }

@@ -13,6 +13,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.stream.Stream;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -24,13 +25,11 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
-import javax.swing.JTextPane;
 import javax.swing.JTree;
 import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileFilter;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.FontUIResource;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -38,6 +37,8 @@ import javax.swing.tree.MutableTreeNode;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.pdfbox.debugger.ui.ExtensionFileFilter;
+import org.apache.tika.exception.TikaException;
 
 import core.DocumentSearcher;
 import core.FileIndexer;
@@ -66,11 +67,8 @@ public class MainFrame extends JFrame {
 	private JFileChooser importFileChooser;
 	private JTree indexedTree;
 	private JLabel resultsLabel;
-	private JPanel panel;
 	private JScrollPane resultDocumentPane;
-	private JScrollPane resultsDocumentsPane;
 	private JTree resultsTree;
-	private JTextPane resultsTextPane;
 	
 	private class ImportAction implements ActionListener {
 		private MainFrame _frame;
@@ -160,6 +158,9 @@ public class MainFrame extends JFrame {
 				}
 			} catch (IOException ex) {
 				System.out.println("Unable to index the files: " + ex.getMessage());
+			} catch (TikaException e) {
+				// TODO Auto-generated catch block
+				System.out.println("Unable to index the files, because tika sucked ass: " + e.getMessage());
 			}
 		}
 	}
@@ -191,7 +192,13 @@ public class MainFrame extends JFrame {
 				UIManager.put (key, f);
 			}
 		}
-    } 
+    }
+
+	private String makeFileFilterTitle(String prefix, String[] extensions) {
+		return prefix + " (" + Stream.of(extensions)
+					  .map(value -> String.join("", "*.", value))
+					  .reduce((t, u) -> t + ", " + u).get() + ")";
+	}
 
 	/**
 	 * Create the frame.
@@ -211,7 +218,8 @@ public class MainFrame extends JFrame {
 		searcher = new DocumentSearcher(indexer);
 		
 		importFileChooser = new JFileChooser();
-		FileFilter filter = new FileNameExtensionFilter("Text File","txt");
+		String[] extensions = new String[]{ "txt", "doc", "docx", "pdf" };
+		FileFilter filter = new ExtensionFileFilter(extensions, makeFileFilterTitle("Documents", extensions));
 		importFileChooser.setFileFilter(filter);
 		importFileChooser.setDialogTitle("Add Documents");
 		importFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -245,27 +253,15 @@ public class MainFrame extends JFrame {
 		resultsLabel.setBorder(new EmptyBorder(0, 0, 5, 0));
 		rightMainPanel.add(resultsLabel, BorderLayout.NORTH);
 		
-		panel = new JPanel();
-		rightMainPanel.add(panel, BorderLayout.CENTER);
-		panel.setLayout(new BorderLayout(0, 0));
-		
 		resultDocumentPane = new JScrollPane();
+		rightMainPanel.add(resultDocumentPane, BorderLayout.CENTER);
 		resultDocumentPane.setPreferredSize(new Dimension(220, 3));
-		panel.add(resultDocumentPane, BorderLayout.WEST);
 		
 		resultsTree = new JTree();
 		resultsTree.setModel(new DefaultTreeModel(new DefaultMutableTreeNode("Results")));
 		resultsTree.setBorder(new EmptyBorder(5, 5, 5, 5));
 		resultsTree.setRootVisible(false);
 		resultDocumentPane.setViewportView(resultsTree);
-		
-		resultsDocumentsPane = new JScrollPane();
-		panel.add(resultsDocumentsPane, BorderLayout.CENTER);
-		
-		resultsTextPane = new JTextPane();
-		resultsTextPane.setContentType("HTML/plain");
-		resultsTextPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-		resultsDocumentsPane.setViewportView(resultsTextPane);
 		
 		leftMainPanel = new JPanel();
 		splitPane.setLeftComponent(leftMainPanel);

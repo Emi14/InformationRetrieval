@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.ro.RomanianAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -27,6 +26,8 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.tika.Tika;
+import org.apache.tika.exception.TikaException;
 
 import core.RomanianStopWords;
 
@@ -76,7 +77,7 @@ public class FileIndexer implements AutoCloseable {
 	    }
 	}
 	
-	public Document addFileToIndex(File file) throws CorruptIndexException, IOException {
+	public Document addFileToIndex(File file) throws CorruptIndexException, IOException, TikaException {
 		String fileAbsolutePath = file.getAbsolutePath();
 		try {
 			Query query = new QueryParser("fullpath", _analyzer).parse(fileAbsolutePath);
@@ -86,10 +87,12 @@ public class FileIndexer implements AutoCloseable {
 			System.out.println("Error when deleting existing documents: " + err.getMessage());
 		}
 		
+		Tika tika = new Tika();
+		
 		Document doc = new Document();
-		doc.add(new TextField("content", new FileReader(file)));
+		doc.add(new TextField("content", tika.parseToString(file), Field.Store.NO));
 		doc.add(new StringField("filename", file.getName(), Field.Store.YES));
-		doc.add(new StringField("fullpath", fileAbsolutePath,  Field.Store.YES));
+		doc.add(new StringField("fullpath", fileAbsolutePath,  Field.Store.YES));		
 		
 		_indexWriter.addDocument(doc);
 		_indexedDocuments.add(doc);
