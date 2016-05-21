@@ -3,6 +3,7 @@ package views;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
@@ -38,11 +39,9 @@ import javax.swing.tree.MutableTreeNode;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.pdfbox.debugger.ui.ExtensionFileFilter;
-import org.apache.tika.exception.TikaException;
 
 import core.DocumentSearcher;
 import core.FileIndexer;
-import java.awt.Font;
 
 public class MainFrame extends JFrame {
 	
@@ -158,9 +157,6 @@ public class MainFrame extends JFrame {
 				}
 			} catch (IOException ex) {
 				System.out.println("Unable to index the files: " + ex.getMessage());
-			} catch (TikaException e) {
-				// TODO Auto-generated catch block
-				System.out.println("Unable to index the files, because tika sucked ass: " + e.getMessage());
 			}
 		}
 	}

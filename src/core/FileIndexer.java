@@ -1,14 +1,17 @@
 package core;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
@@ -16,20 +19,21 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
-
-import core.RomanianStopWords;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.Parser;
+import org.apache.tika.sax.BodyContentHandler;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.SAXException;
 
 public class FileIndexer implements AutoCloseable {
 	
@@ -77,22 +81,36 @@ public class FileIndexer implements AutoCloseable {
 	    }
 	}
 	
-	public Document addFileToIndex(File file) throws CorruptIndexException, IOException, TikaException {
-		String fileAbsolutePath = file.getAbsolutePath();
-		try {
-			Query query = new QueryParser("fullpath", _analyzer).parse(fileAbsolutePath);
-			_indexWriter.deleteDocuments(query);
-		}
-		catch (ParseException err) {
-			System.out.println("Error when deleting existing documents: " + err.getMessage());
-		}
+	public Document addFileToIndex(File file) throws CorruptIndexException, IOException {
+		// Reading the creationTime of the file.
+		BasicFileAttributes attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
 		
-		Tika tika = new Tika();
-		
+		// Reading the contents of the file.
+		ContentHandler handler = new BodyContentHandler();
+        
+        try(FileInputStream is = new FileInputStream(file)) {
+        	Metadata metadata = new Metadata();
+            metadata.set(Metadata.RESOURCE_NAME_KEY, file.getCanonicalPath());
+            Parser parser = new AutoDetectParser();
+            ParseContext context = new ParseContext();
+            parser.parse(is, handler, metadata, context);
+        }
+        catch (SAXException | TikaException err) {
+        	throw new IOException(err);
+        }
+        
+        String fileAbsolutePath = file.getAbsolutePath();
+		String fileContents = handler.toString();
+        String fileName = file.getName();
+        long fileCreatedDate = attr.creationTime().toMillis();
+        long fileSize = attr.size();
+        
 		Document doc = new Document();
-		doc.add(new TextField("content", tika.parseToString(file), Field.Store.NO));
-		doc.add(new StringField("filename", file.getName(), Field.Store.YES));
-		doc.add(new StringField("fullpath", fileAbsolutePath,  Field.Store.YES));		
+		doc.add(new TextField("content", fileContents, Field.Store.YES));
+		doc.add(new StringField("filename", fileName, Field.Store.YES));
+		doc.add(new StringField("fullpath", fileAbsolutePath,  Field.Store.YES));
+		doc.add(new LongPoint("createdate", fileCreatedDate));
+		doc.add(new LongPoint("sizeBytes", fileSize));
 		
 		_indexWriter.addDocument(doc);
 		_indexedDocuments.add(doc);
