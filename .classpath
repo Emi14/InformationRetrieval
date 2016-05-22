@@ -2,9 +2,11 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="E:/lucene-6.0.0/highlighter/lucene-highlighter-6.0.0.jar"/>
 	<classpathentry kind="lib" path="E:/lucene-6.0.0/queryparser/lucene-queryparser-6.0.0.jar"/>
 	<classpathentry kind="lib" path="E:/lucene-6.0.0/analysis/common/lucene-analyzers-common-6.0.0.jar"/>
 	<classpathentry kind="lib" path="E:/lucene-6.0.0/core/lucene-core-6.0.0.jar"/>
 	<classpathentry kind="lib" path="E:/tika-app-1.13.jar"/>
+	<classpathentry kind="lib" path="E:/lucene-6.0.0/memory/lucene-memory-6.0.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
