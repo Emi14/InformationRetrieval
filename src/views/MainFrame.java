@@ -33,6 +33,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.plaf.FontUIResource;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.MutableTreeNode;
 
@@ -121,7 +122,7 @@ public class MainFrame extends JFrame {
  				String text = this._frame.searchTextField.getText();
 				Document[] docs = this._frame.searcher.search(text);
 				for (int i = 0; i < docs.length; i++) {
-					this._frame.addDocToTree(docs[i], this._frame.resultsTree);
+					this._frame.addDocToResultsTree(docs[i]);
 			    }
 			} catch (IOException e1) {
 				System.out.println("Unable to update the indexer's reader: " + e1.getMessage());
@@ -153,7 +154,7 @@ public class MainFrame extends JFrame {
 			try {
 				for (File selectedFile: selectedFiles) {
 					Document doc = this.indexer.addFileToIndex(selectedFile);
-					this.addDocToTree(doc, this.indexedTree);
+					this.addDocToIndexedTree(doc);
 				}
 			} catch (IOException ex) {
 				System.out.println("Unable to index the files: " + ex.getMessage());
@@ -170,10 +171,22 @@ public class MainFrame extends JFrame {
     	}
 	}
 	
-	private void addDocToTree(Document doc, JTree tree) {
+	private void addDocToIndexedTree(Document doc) {
+		JTree tree = this.indexedTree;
 		DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
 		DefaultMutableTreeNode root = (DefaultMutableTreeNode)model.getRoot();
 		String title = doc.get("filename") + " (" + doc.get("fullpath") + ")";
+		DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(title);
+		root.add(newNode);
+		model.reload(root);
+	}
+	
+	private void addDocToResultsTree(Document doc) {
+		JTree tree = this.resultsTree;
+		DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+		DefaultMutableTreeNode root = (DefaultMutableTreeNode)model.getRoot();
+		String templateHtml = "<html><div style=\"color: #1a0dab\"><b>%1$s</b></div><div style=\"color: #006621\"><i>%2$s</i></div><br/></html>";
+		String title = String.format(templateHtml, doc.get("filename"), doc.get("fullpath"));
 		DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(title);
 		root.add(newNode);
 		model.reload(root);
@@ -258,7 +271,13 @@ public class MainFrame extends JFrame {
 		resultsTree.setBorder(new EmptyBorder(5, 5, 5, 5));
 		resultsTree.setRootVisible(false);
 		resultDocumentPane.setViewportView(resultsTree);
-		
+		DefaultTreeCellRenderer renderer = (DefaultTreeCellRenderer) resultsTree.getCellRenderer();
+        renderer.setLeafIcon(null);
+        renderer.setClosedIcon(null);
+        renderer.setOpenIcon(null);
+        renderer.setBackgroundSelectionColor(null);
+        renderer.setBorderSelectionColor(null);
+        
 		leftMainPanel = new JPanel();
 		splitPane.setLeftComponent(leftMainPanel);
 		leftMainPanel.setLayout(new BorderLayout(0, 0));
@@ -294,7 +313,7 @@ public class MainFrame extends JFrame {
 		
 		Document[] indexedDocuments = indexer.getIndexedDocuments();
 		for (Document doc: indexedDocuments) {
-			this.addDocToTree(doc, this.indexedTree);
+			this.addDocToIndexedTree(doc);
 		}
 
 		indexedDocumentsLabel = new JLabel("Indexed documents");
