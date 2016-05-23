@@ -42,6 +42,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.pdfbox.debugger.ui.ExtensionFileFilter;
 
 import core.DocumentSearcher;
+import core.DocumentSearcher.SearchResult;
 import core.FileIndexer;
 
 public class MainFrame extends JFrame {
@@ -120,9 +121,9 @@ public class MainFrame extends JFrame {
  			try {
  				this._frame.clearTree(resultsTree);
  				String text = this._frame.searchTextField.getText();
-				Document[] docs = this._frame.searcher.search(text);
-				for (int i = 0; i < docs.length; i++) {
-					this._frame.addDocToResultsTree(docs[i]);
+				SearchResult[] results = this._frame.searcher.search(text);
+				for (int i = 0; i < results.length; i++) {
+					this._frame.addResultToResultsTree(results[i]);
 			    }
 			} catch (IOException e1) {
 				System.out.println("Unable to update the indexer's reader: " + e1.getMessage());
@@ -181,12 +182,19 @@ public class MainFrame extends JFrame {
 		model.reload(root);
 	}
 	
-	private void addDocToResultsTree(Document doc) {
+	private void addResultToResultsTree(SearchResult result) {
 		JTree tree = this.resultsTree;
 		DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
 		DefaultMutableTreeNode root = (DefaultMutableTreeNode)model.getRoot();
-		String templateHtml = "<html><div style=\"color: #1a0dab\"><b>%1$s</b></div><div style=\"color: #006621\"><i>%2$s</i></div><br/></html>";
-		String title = String.format(templateHtml, doc.get("filename"), doc.get("fullpath"));
+		
+		String templateHtml = "<html><div style=\"color: #1a0dab\"><b>%1$s</b></div><div style=\"color: #006621\"><i>%2$s</i></div><div syle=\"color: #6a6a6a\">%3$s<div><br/></html>";
+		
+		Document doc = result.document;
+		String joinedFragments = Stream.of(result.fragments)
+									   .map(frag -> "... " + frag.toString().trim().replaceAll("\n+", " ") + " ...")
+				                       .reduce((t, u) -> t + "<br/> " + u).orElse("");
+		System.out.println(joinedFragments);
+		String title = String.format(templateHtml, doc.get("filename"), doc.get("fullpath"), joinedFragments);
 		DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(title);
 		root.add(newNode);
 		model.reload(root);
