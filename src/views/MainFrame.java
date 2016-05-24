@@ -13,6 +13,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.Enumeration;
 import java.util.stream.Stream;
 
@@ -37,6 +38,9 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.MutableTreeNode;
 
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.pdfbox.debugger.ui.ExtensionFileFilter;
@@ -44,6 +48,7 @@ import org.apache.pdfbox.debugger.ui.ExtensionFileFilter;
 import core.DocumentSearcher;
 import core.DocumentSearcher.SearchResult;
 import core.FileIndexer;
+import core.RomanianAnalyzerWithoutDiacritics;
 
 public class MainFrame extends JFrame {
 	
@@ -121,6 +126,15 @@ public class MainFrame extends JFrame {
  			try {
  				this._frame.clearTree(resultsTree);
  				String text = this._frame.searchTextField.getText();
+ 				StringReader tReader = new StringReader(text);
+ 				RomanianAnalyzerWithoutDiacritics analyzer = new RomanianAnalyzerWithoutDiacritics();
+ 				TokenStream tokenStream = analyzer.tokenStream("contents", tReader);
+ 				OffsetAttribute offsetAttribute = tokenStream.addAttribute(OffsetAttribute.class);
+ 		        CharTermAttribute charTermAttribute = tokenStream.getAttribute(CharTermAttribute.class);
+ 		        tokenStream.reset();
+ 				while (tokenStream.incrementToken()){
+                    System.out.println("Token iz: "+ charTermAttribute.toString());
+                }
 				SearchResult[] results = this._frame.searcher.search(text);
 				for (int i = 0; i < results.length; i++) {
 					this._frame.addResultToResultsTree(results[i]);
@@ -193,7 +207,7 @@ public class MainFrame extends JFrame {
 		String joinedFragments = Stream.of(result.fragments)
 									   .map(frag -> "... " + frag.toString().trim().replaceAll("\n+", " ") + " ...")
 				                       .reduce((t, u) -> t + "<br/> " + u).orElse("");
-		System.out.println(joinedFragments);
+		
 		String title = String.format(templateHtml, doc.get("filename"), doc.get("fullpath"), joinedFragments);
 		DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(title);
 		root.add(newNode);

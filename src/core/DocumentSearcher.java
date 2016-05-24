@@ -81,7 +81,7 @@ public class DocumentSearcher {
     		String text = doc.get(where);
     		ArrayList<TextFragment> fragsList = new ArrayList<TextFragment>();
     		
-    		int fragSize = Math.min(100, text.length());
+    		int fragSize = Math.min(50, text.length());
     		int fragCount = text.length() / fragSize;
     		
     		try {
