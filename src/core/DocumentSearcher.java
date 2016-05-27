@@ -10,6 +10,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -54,21 +57,31 @@ public class DocumentSearcher {
 		return fragments;
 	}
 	
+	/**
+	 * Searches on the 'content' field and additionally on 'abstract' field.
+	 * The 'content' field is less boosted than 'abstract' field.
+	 */
 	public SearchResult[] search(String queryString) throws ParseException, IOException {
-		return search(queryString, "content");
-	}
-	
-	public SearchResult[] search(String queryString, String where) throws ParseException, IOException {
 		_fileIndexer.updateReader();
 		
 		Analyzer analyzer = _fileIndexer.getAnalyzer();
 		IndexReader indexReader = _fileIndexer.getIndexReader();
 		
-		Query query = new QueryParser(where, analyzer).parse(queryString);
+		Query contentQuery = new QueryParser("content", analyzer).parse(queryString);
+		Query abstractQuery = new QueryParser("abstract", analyzer).parse(queryString);
+		BoostQuery boostedContentQuery = new BoostQuery(contentQuery, 0.2f);
+		BoostQuery boostedAbstractQuery = new BoostQuery(abstractQuery, 0.8f);
+		
+		BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
+		booleanQueryBuilder.add(boostedContentQuery, Occur.MUST);
+		booleanQueryBuilder.add(boostedAbstractQuery, Occur.SHOULD);	
+		
+		Query query = booleanQueryBuilder.build();
+		
 		int hitsPerPage = 10;
 	    IndexSearcher searcher = new IndexSearcher(indexReader);
 	    TopScoreDocCollector collector = TopScoreDocCollector.create(hitsPerPage);
-	    searcher.search(query, collector);
+	    searcher.search(booleanQueryBuilder.build(), collector);
 	    
 	    ScoreDoc[] hits = collector.topDocs().scoreDocs;
 	    SearchResult[] searchResults = new SearchResult[hits.length];
@@ -78,14 +91,14 @@ public class DocumentSearcher {
 	    	ScoreDoc scoreDoc = result.scoreDoc = hits[i];
 	    	int id = result.docId = scoreDoc.doc;
     		Document doc = result.document = searcher.doc(id);
-    		String text = doc.get(where);
+    		String text = doc.get("content");
     		ArrayList<TextFragment> fragsList = new ArrayList<TextFragment>();
     		
     		int fragSize = Math.min(50, text.length());
     		int fragCount = text.length() / fragSize;
     		
     		try {
-				TextFragment[] fragsArray = getFragmentsWithHighlitedText(query, where, text, fragSize, fragCount);
+				TextFragment[] fragsArray = getFragmentsWithHighlitedText(query, "content", text, fragSize, fragCount);
 				Stream.of(fragsArray).filter(frag -> frag != null && frag.getScore() > 0).forEachOrdered(fragsList::add);
 			} catch (InvalidTokenOffsetsException e) {
 				// TODO Auto-generated catch block

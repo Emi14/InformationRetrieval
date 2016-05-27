@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.StringTokenizer;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -104,9 +105,17 @@ public class FileIndexer implements AutoCloseable {
         String fileName = file.getName();
         long fileCreatedDate = attr.creationTime().toMillis();
         long fileSize = attr.size();
+        int maxTokens = 5;
+        StringTokenizer fileContentsTokenizer = new StringTokenizer(fileContents);
+        StringBuilder fileAbstractBuilder = new StringBuilder();
+        for(int i = 0; i < maxTokens && fileContentsTokenizer.hasMoreTokens(); i++) {
+        	fileAbstractBuilder.append(fileContentsTokenizer.nextToken());
+        	fileAbstractBuilder.append(' ');
+        }
         
 		Document doc = new Document();
 		doc.add(new TextField("content", fileContents, Field.Store.YES));
+		doc.add(new TextField("abstract", fileAbstractBuilder.toString(), Field.Store.YES));
 		doc.add(new StringField("filename", fileName, Field.Store.YES));
 		doc.add(new StringField("fullpath", fileAbsolutePath,  Field.Store.YES));
 		doc.add(new LongPoint("createdate", fileCreatedDate));
