@@ -201,14 +201,14 @@ public class MainFrame extends JFrame {
 		DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
 		DefaultMutableTreeNode root = (DefaultMutableTreeNode)model.getRoot();
 		
-		String templateHtml = "<html><div style=\"color: #1a0dab\"><b>%1$s</b></div><div style=\"color: #006621\"><i>%2$s</i></div><div syle=\"color: #6a6a6a\">%3$s<div><br/></html>";
+		String templateHtml = "<html><div style=\"color: #1a0dab\"><b>%1$s (%4$.3f)</b></div><div style=\"color: #006621\"><i>%2$s</i></div><div syle=\"color: #6a6a6a\">%3$s<div><br/></html>";
 		
 		Document doc = result.document;
 		String joinedFragments = Stream.of(result.fragments)
 									   .map(frag -> "... " + frag.toString().trim().replaceAll("\n+", " ") + " ...")
 				                       .reduce((t, u) -> t + "<br/> " + u).orElse("");
 		
-		String title = String.format(templateHtml, doc.get("filename"), doc.get("fullpath"), joinedFragments);
+		String title = String.format(templateHtml, doc.get("filename"), doc.get("fullpath"), joinedFragments, result.score);
 		DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(title);
 		root.add(newNode);
 		model.reload(root);

@@ -105,7 +105,9 @@ public class FileIndexer implements AutoCloseable {
         String fileName = file.getName();
         long fileCreatedDate = attr.creationTime().toMillis();
         long fileSize = attr.size();
-        int maxTokens = 5;
+        
+        /* Abstract is considered to be the first 20 words from the document. */
+        int maxTokens = 20;
         StringTokenizer fileContentsTokenizer = new StringTokenizer(fileContents);
         StringBuilder fileAbstractBuilder = new StringBuilder();
         for(int i = 0; i < maxTokens && fileContentsTokenizer.hasMoreTokens(); i++) {

@@ -33,6 +33,7 @@ public class DocumentSearcher {
 		public Document document;
 		public ScoreDoc scoreDoc;
 		public int docId;
+		public float score;
 	}
 	
 	private FileIndexer _fileIndexer;
@@ -90,6 +91,7 @@ public class DocumentSearcher {
 	    	SearchResult result = new SearchResult();
 	    	ScoreDoc scoreDoc = result.scoreDoc = hits[i];
 	    	int id = result.docId = scoreDoc.doc;
+	    	result.score = scoreDoc.score;
     		Document doc = result.document = searcher.doc(id);
     		String text = doc.get("content");
     		ArrayList<TextFragment> fragsList = new ArrayList<TextFragment>();
