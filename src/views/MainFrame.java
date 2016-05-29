@@ -126,15 +126,6 @@ public class MainFrame extends JFrame {
  			try {
  				this._frame.clearTree(resultsTree);
  				String text = this._frame.searchTextField.getText();
- 				StringReader tReader = new StringReader(text);
- 				RomanianAnalyzerWithoutDiacritics analyzer = new RomanianAnalyzerWithoutDiacritics();
- 				TokenStream tokenStream = analyzer.tokenStream("contents", tReader);
- 				OffsetAttribute offsetAttribute = tokenStream.addAttribute(OffsetAttribute.class);
- 		        CharTermAttribute charTermAttribute = tokenStream.getAttribute(CharTermAttribute.class);
- 		        tokenStream.reset();
- 				while (tokenStream.incrementToken()){
-                    System.out.println("Token iz: "+ charTermAttribute.toString());
-                }
 				SearchResult[] results = this._frame.searcher.search(text);
 				for (int i = 0; i < results.length; i++) {
 					this._frame.addResultToResultsTree(results[i]);

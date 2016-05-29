@@ -8,6 +8,10 @@ import java.nio.charset.Charset;
 
 import org.apache.lucene.analysis.util.CharArraySet;
 
+/**
+ * Romanian Stopwords, using the two types of diactritics.
+ * Example: ş, ș.
+ */
 public class RomanianStopWords {
 	
 	private static CharArraySet _stopWords = new CharArraySet(0, true);

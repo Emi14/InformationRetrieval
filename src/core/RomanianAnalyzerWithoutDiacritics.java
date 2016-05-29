@@ -13,6 +13,12 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.tartarus.snowball.ext.RomanianStemmer;
 
+/**
+ * Improved Romanian Analyzer that uses a SnowballFilter,
+ * and ASCIIFoldingFilter. Also the stopwords are merged
+ * with the non-diacritics ones.
+ *
+ */
 public class RomanianAnalyzerWithoutDiacritics extends StopwordAnalyzerBase {
 	
 	public RomanianAnalyzerWithoutDiacritics() {
