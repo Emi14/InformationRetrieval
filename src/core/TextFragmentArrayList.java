@@ -6,7 +6,8 @@ import org.apache.lucene.search.highlight.TextFragment;
 
 /**
  * Meta class, used to merge consecutive added TextFragments,
- * if possible. 
+ * if possible. Overrides the 'add' operation, which now has O(n) complexity.
+ * This should be used for small lists.
  */
 public class TextFragmentArrayList extends ArrayList<TextFragment> {
 	
@@ -16,10 +17,9 @@ public class TextFragmentArrayList extends ArrayList<TextFragment> {
 		if (this.isEmpty())  {
 			return super.add(fragment);
 		}
-		
-		int currentIndex = this.size() - 1;
-		TextFragment currentFragment = this.get(currentIndex);
-		if (!fragment.follows(currentFragment)) {
+		TextFragment currentFragment = this.stream().filter(value -> fragment.follows(value))
+				.findFirst().orElse(null);
+		if (currentFragment == null) {
 			return super.add(fragment);
 		}
 		currentFragment.merge(fragment);

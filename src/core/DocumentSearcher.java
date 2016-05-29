@@ -3,6 +3,8 @@ package core;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -76,19 +78,55 @@ public class DocumentSearcher {
 		}
 		queryTokenStream.close();
 		
-		/* For each fragment check how many tokens are in the fragment */
-		for (TextFragment fragment : fragsList) {
-			int count = 0;
+		class MappedFragment implements Comparable<MappedFragment> {
+			public TextFragment fragment = null;
+			public Set<String> tokens = new HashSet<String>();
+			
+			public MappedFragment(TextFragment fragment) {
+				this.fragment = fragment;
+			}
+			
+			@Override
+		    public int compareTo(MappedFragment mf) {
+		        return mf.tokens.size() - this.tokens.size();
+		    }
+		}
+		
+		/* For each fragment, map the fragment with it's unique tokens fragment */
+		ArrayList<MappedFragment> mappedTokens = new ArrayList<MappedFragment>(fragsList.size());
+		for (int index = 0; index < fragsList.size(); index++) {
+			TextFragment fragment = fragsList.get(index);
+			MappedFragment mp = new MappedFragment(fragment);
 			TokenStream fragmentTokenStream = analyzer.tokenStream("content", new StringReader(fragment.toString()));
 	        CharTermAttribute fragmentCharTermAttribute = fragmentTokenStream.getAttribute(CharTermAttribute.class);
 	        fragmentTokenStream.reset();
 			while (fragmentTokenStream.incrementToken()) {
-				count += queryTokensSet.contains(fragmentCharTermAttribute.toString()) ? 1 : 0;
+				String fragmentToken = fragmentCharTermAttribute.toString();
+				if (queryTokensSet.contains(fragmentToken)) {
+					mp.tokens.add(fragmentToken);
+				}
 			}
-			System.out.println(count + " " + fragment.toString());
 			fragmentTokenStream.close();
+			mappedTokens.add(mp);
 		}
-		return null;
+		
+		/* Sort the mapped fragments by their tokens set size */
+		Collections.sort(mappedTokens);
+		
+		ArrayList<TextFragment> newFragsList = new ArrayList<TextFragment>();
+		
+		/* Get only the first fragments which their tokens are contained completely
+		 * into the query tokens. Then remove these tokens from the query tokens,
+		 * so we don't get another fragment with common tokens.
+		 */
+		for (MappedFragment mappedFragment : mappedTokens) {
+			if (queryTokensSet.containsAll(mappedFragment.tokens)) {
+				queryTokensSet.removeAll(mappedFragment.tokens);
+				newFragsList.add(mappedFragment.fragment);
+			}
+		}
+		
+		return newFragsList;
 	}
 	
 	/**
@@ -135,15 +173,12 @@ public class DocumentSearcher {
     		try {
 				TextFragment[] fragsArray = getFragmentsWithHighlitedText(query, "content", text, fragSize, fragCount, false);
 				Stream.of(fragsArray).filter(frag -> frag != null && frag.getScore() > 0).forEachOrdered(fragsList::add);
-				getRelevantFragments(fragsList, queryString);
+				fragsList = getRelevantFragments(fragsList, queryString);
 			} catch (InvalidTokenOffsetsException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
     		result.fragments = fragsList.toArray(new TextFragment[fragsList.size()]);
-    		for (int x = 0; x < result.fragments.length - 1; x ++) {
-    			System.out.println(x + " " + (x + 1) + " " + result.fragments[x + 1].follows(result.fragments[x]));
-    		}
     		searchResults[i] = result;
 	    }
 	    
